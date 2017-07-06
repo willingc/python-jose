@@ -103,16 +103,23 @@ class HMACKey(Key):
         if isinstance(key, six.text_type):
             key = key.encode('utf-8')
 
-        invalid_strings = [
-            b'-----BEGIN PUBLIC KEY-----',
-            b'-----BEGIN CERTIFICATE-----',
-            b'ssh-rsa'
-        ]
-
-        if any([string_value in key for string_value in invalid_strings]):
+        try:
+            RSAKey(key, ALGORITHMS.RS256)
+        except:
+            pass
+        else:
             raise JWKError(
-                'The specified key is an asymmetric key or x509 certificate and'
-                ' should not be used as an HMAC secret.')
+                'The specified key is a valid RSA asymmetric key and should not'
+                ' be used as an HMAC secret.')
+
+        try:
+            ECKey(key, ALGORITHMS.ES256)
+        except:
+            pass
+        else:
+            raise JWKError(
+                'The specified key is a valid EC asymmetric key and should not'
+                ' be used as an HMAC secret.')
 
         self.prepared_key = key
 

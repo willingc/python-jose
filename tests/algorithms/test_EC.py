@@ -1,36 +1,32 @@
 
+import ecdsa
+import pytest
+
 from jose.constants import ALGORITHMS
 from jose.exceptions import JOSEError, JWKError
 
 from jose.backends.ecdsa_backend import ECDSAECKey
 from jose.backends.cryptography_backend import CryptographyECKey
 
-import ecdsa
-import pytest
-
-private_key = """-----BEGIN EC PRIVATE KEY-----
-MHcCAQEEIOiSs10XnBlfykk5zsJRmzYybKdMlGniSJcssDvUcF6DoAoGCCqGSM49
-AwEHoUQDQgAE7gb4edKJ7ul9IgomCdcOebQTZ8qktqtBfRKboa71CfEKzBruUi+D
-WkG0HJWIORlPbvXME+DRh6G/yVOKnTm88Q==
------END EC PRIVATE KEY-----"""
+from tests.keys import EC_PRIVATE_KEY
 
 
 class TestECAlgorithm:
 
     @pytest.mark.parametrize("Backend", [ECDSAECKey, CryptographyECKey])
     def test_key_from_pem(self, Backend):
-        assert not Backend(private_key, ALGORITHMS.ES256).is_public()
+        assert not Backend(EC_PRIVATE_KEY, ALGORITHMS.ES256).is_public()
 
     @pytest.mark.parametrize("Backend", [ECDSAECKey, CryptographyECKey])
     def test_key_from_ecdsa(self, Backend):
-        key = ecdsa.SigningKey.from_pem(private_key)
+        key = ecdsa.SigningKey.from_pem(EC_PRIVATE_KEY)
         assert not Backend(key, ALGORITHMS.ES256).is_public()
 
     @pytest.mark.parametrize("Backend", [ECDSAECKey, CryptographyECKey])
     def test_to_pem(self, Backend):
-        key = Backend(private_key, ALGORITHMS.ES256)
+        key = Backend(EC_PRIVATE_KEY, ALGORITHMS.ES256)
         assert not key.is_public()
-        assert key.to_pem().strip() == private_key.strip().encode('utf-8')
+        assert key.to_pem().strip() == EC_PRIVATE_KEY.strip().encode('utf-8')
 
         public_pem = key.public_key().to_pem()
         assert Backend(public_pem, ALGORITHMS.ES256).is_public()
@@ -50,7 +46,7 @@ class TestECAlgorithm:
 
     @pytest.mark.parametrize("Backend", [ECDSAECKey, CryptographyECKey])
     def test_get_public_key(self, Backend):
-        key = Backend(private_key, ALGORITHMS.ES256)
+        key = Backend(EC_PRIVATE_KEY, ALGORITHMS.ES256)
         pubkey = key.public_key()
         pubkey2 = pubkey.public_key()
         assert pubkey == pubkey2
@@ -70,7 +66,7 @@ class TestECAlgorithm:
     @pytest.mark.parametrize("Backend", [ECDSAECKey, CryptographyECKey])
     def test_invalid_algorithm(self, Backend):
         with pytest.raises(JWKError):
-            Backend(private_key, 'nonexistent')
+            Backend(EC_PRIVATE_KEY, 'nonexistent')
 
         with pytest.raises(JWKError):
             Backend({'kty': 'bla'}, ALGORITHMS.ES256)
@@ -102,7 +98,7 @@ class TestECAlgorithm:
 
     @pytest.mark.parametrize("Backend", [ECDSAECKey])
     def test_verify(self, Backend):
-        key = Backend(private_key, ALGORITHMS.ES256)
+        key = Backend(EC_PRIVATE_KEY, ALGORITHMS.ES256)
         msg = b'test'
         signature = key.sign(msg)
         public_key = key.public_key()
@@ -131,15 +127,15 @@ class TestECAlgorithm:
 
     @pytest.mark.parametrize("Backend", [ECDSAECKey, CryptographyECKey])
     def test_to_dict(self, Backend):
-        key = Backend(private_key, ALGORITHMS.ES256)
+        key = Backend(EC_PRIVATE_KEY, ALGORITHMS.ES256)
         self.assert_parameters(key.to_dict(), private=True)
         self.assert_parameters(key.public_key().to_dict(), private=False)
 
     @pytest.mark.parametrize("BackendSign", [ECDSAECKey, CryptographyECKey])
     @pytest.mark.parametrize("BackendVerify", [ECDSAECKey, CryptographyECKey])
     def test_signing_parity(self, BackendSign, BackendVerify):
-        key_sign = BackendSign(private_key, ALGORITHMS.ES256)
-        key_verify = BackendVerify(private_key, ALGORITHMS.ES256).public_key()
+        key_sign = BackendSign(EC_PRIVATE_KEY, ALGORITHMS.ES256)
+        key_verify = BackendVerify(EC_PRIVATE_KEY, ALGORITHMS.ES256).public_key()
 
         msg = b'test'
         sig = key_sign.sign(msg)
@@ -148,4 +144,4 @@ class TestECAlgorithm:
         assert key_verify.verify(msg, sig)
 
         # invalid signature
-        assert not key_verify.verify(msg, b'n' * 64)
+        assert not key_verify.verify(msg, b'n' * 132)

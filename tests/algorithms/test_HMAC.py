@@ -1,9 +1,15 @@
 
+import pytest
+
 from jose.constants import ALGORITHMS
 from jose.exceptions import JOSEError
 from jose.jwk import HMACKey
 
-import pytest
+from tests.keys import RSA_PUBLIC_KEY
+from tests.keys import RSA_X509_CERTIFICATE
+from tests.keys import RSA_PKCS1_PEM
+from tests.keys import RSA_PRIVATE_KEY
+from tests.keys import RSA_OPENSSL_KEY
 
 
 class TestHMACAlgorithm:
@@ -13,17 +19,15 @@ class TestHMACAlgorithm:
             HMACKey(object(), ALGORITHMS.HS256)
 
     def test_RSA_key(self):
-        key = "-----BEGIN PUBLIC KEY-----"
-        with pytest.raises(JOSEError):
-            HMACKey(key, ALGORITHMS.HS256)
 
-        key = "-----BEGIN CERTIFICATE-----"
-        with pytest.raises(JOSEError):
-            HMACKey(key, ALGORITHMS.HS256)
-
-        key = "ssh-rsa"
-        with pytest.raises(JOSEError):
-            HMACKey(key, ALGORITHMS.HS256)
+        for key in (
+                RSA_PUBLIC_KEY,
+                RSA_X509_CERTIFICATE,
+                RSA_PKCS1_PEM,
+                RSA_PRIVATE_KEY,
+                RSA_OPENSSL_KEY):
+            with pytest.raises(JOSEError):
+                HMACKey(key, ALGORITHMS.HS256)
 
     def test_to_dict(self):
         passphrase = 'The quick brown fox jumps over the lazy dog'
